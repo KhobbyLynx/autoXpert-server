@@ -68,13 +68,18 @@ export const registerUser = asyncHandler(async (req, res) => {
 // @route POST /api/users/login
 // @access Public
 export const loginUser = asyncHandler(async (req, res) => {
+  const { email, password } = req.body
+
+  //Check for user email
   try {
-    const { email, password } = req.body
-
-    //Check for user email
     const user = await User.findOne({ email })
+    if (!user) {
+      throw new Error('Email not registered, Create an account')
+    }
 
-    if (user && (await bcrypt.compare(password, user.password))) {
+    const userPassword = await bcrypt.compare(password, user.password)
+
+    if (user && userPassword) {
       res.json({
         _id: user.id,
         name: user.name,
@@ -86,7 +91,10 @@ export const loginUser = asyncHandler(async (req, res) => {
       throw new Error('Invalid user credentials')
     }
   } catch (error) {
-    res.status(500).json({ error: 'Internal Server Error' })
+    res.status(error.status || 400)
+    res.json({
+      message: error.message,
+    })
   }
 })
 
